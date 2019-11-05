@@ -79,7 +79,10 @@ arm = stepper(port = 0, speed = 10)
 # //                       MAIN FUNCTIONS                       //
 # //             SHOULD INTERACT DIRECTLY WITH HARDWARE         //
 # ////////////////////////////////////////////////////////////////
-	
+s0 = stepper(port=0, micro_steps=32, hold_current=20, run_current=20, accel_current=20, deaccel_current=20,
+             steps_per_unit=200, speed=8)
+
+
 class MainScreen(Screen):
     version = cyprus.read_firmware_version()
     armPosition = 0
@@ -101,22 +104,32 @@ class MainScreen(Screen):
         print("Process arm movement here")
 
     def toggleMagnet(self):
+
         print("Process magnet here")
         
     def auto(self):
         print("Run the arm automatically here")
 
     def setArmPosition(self, position):
+        s0.go_to_position(self.ids.moveArm.value)
         print("Move arm here")
 
     def homeArm(self):
         arm.home(self.homeDirection)
         
     def isBallOnTallTower(self):
-        print("Determine if ball is on the top tower")
+        if (cyprus.read_gpio() & 0b0001) == 1:
+            sleep(0.01)
+        else:
+            sleep(0.01)
+            print("Ball on top of tall tower")
 
     def isBallOnShortTower(self):
-        print("Determine if ball is on the bottom tower")
+        if (cyprus.read_gpio() & 0b0010) == 1:
+            sleep(0.01)
+        else:
+            sleep(0.01)
+            print("Ball on top of short tower")
         
     def initialize(self):
         print("Home arm and turn off magnet")
