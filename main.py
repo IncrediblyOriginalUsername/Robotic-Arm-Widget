@@ -122,7 +122,8 @@ class MainScreen(Screen):
         print("Run the arm automatically here")
 
     def setArmPosition(self, position):
-        s0.go_to_position(self.ids.moveArm.value / 50)
+        s0.set_speed(.5)
+        s0.go_to_position(self.ids.moveArm.value / 5000)
 
     def homeArm(self):
         arm.home(self.homeDirection)
