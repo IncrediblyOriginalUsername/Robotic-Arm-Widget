@@ -48,6 +48,7 @@ CLOCKWISE = 0
 COUNTERCLOCKWISE = 1
 ARM_SLEEP = 2.5
 DEBOUNCE = 0.10
+cyprus.initialize()
 
 lowerTowerPosition = 60
 upperTowerPosition = 76
@@ -81,7 +82,8 @@ arm = stepper(port = 0, speed = 10)
 # ////////////////////////////////////////////////////////////////
 s0 = stepper(port=0, micro_steps=32, hold_current=20, run_current=20, accel_current=20, deaccel_current=20,
              steps_per_unit=200, speed=8)
-
+global arm
+arm = False
 
 class MainScreen(Screen):
     version = cyprus.read_firmware_version()
@@ -101,18 +103,26 @@ class MainScreen(Screen):
         return processInput
 
     def toggleArm(self):
-        print("Process arm movement here")
+        global arm
+        if arm == False:
+            cyprus.set_pwm_values(1, period_value=100000, compare_value=0,
+                                  compare_mode=cyprus.LESS_THAN_OR_EQUAL)
+            print("Up")
+            arm = True
+        else:
+            cyprus.set_pwm_values(1, period_value=100000, compare_value=100000,
+                                  compare_mode=cyprus.LESS_THAN_OR_EQUAL)
+            arm = False
+            print("Down")
 
     def toggleMagnet(self):
-
-        print("Process magnet here")
+        print('magnet')
         
     def auto(self):
         print("Run the arm automatically here")
 
     def setArmPosition(self, position):
-        s0.go_to_position(self.ids.moveArm.value)
-        print("Move arm here")
+        s0.go_to_position(self.ids.moveArm.value / 50)
 
     def homeArm(self):
         arm.home(self.homeDirection)
