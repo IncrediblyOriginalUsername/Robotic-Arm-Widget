@@ -5,6 +5,7 @@
 import math
 import sys
 import time
+import threading
 
 from kivy.app import App
 from kivy.lang import Builder
@@ -26,6 +27,7 @@ from kivy.config import Config
 from kivy.core.window import Window
 from pidev.kivy import DPEAButton
 from pidev.kivy import PauseScreen
+from threading import Thread
 from time import sleep
 import RPi.GPIO as GPIO 
 from pidev.stepper import stepper
@@ -84,6 +86,12 @@ s0 = stepper(port=0, micro_steps=32, hold_current=20, run_current=20, accel_curr
              steps_per_unit=200, speed=8)
 global arm
 arm = False
+global magnet
+magnet = False
+global tall
+tall = False
+global short
+short = False
 
 class MainScreen(Screen):
     version = cyprus.read_firmware_version()
@@ -102,6 +110,11 @@ class MainScreen(Screen):
         self.lastClick = currentTime
         return processInput
 
+    def startDetect(self):
+        print('working?')
+        Thread(target=self.isBallOnTallTower).start()
+        Thread(target=self.isBallOnShortTower).start()
+
     def toggleArm(self):
         global arm
         if arm == False:
@@ -116,33 +129,60 @@ class MainScreen(Screen):
             print("Down")
 
     def toggleMagnet(self):
-        print('magnet')
+        global magnet
+        if magnet == False:
+            cyprus.set_servo_position(2, 1)
+            magnet = True
+            print('magnet on')
+        else:
+            cyprus.set_servo_position(2, 0.5)
+            magnet = False
+            print('magnet off')
         
     def auto(self):
-        print("Run the arm automatically here")
+        global tall
+        global short
+        if tall == True:
+            print('running auto 1')
+        elif short == True:
+            print("running auto 2")
 
     def setArmPosition(self, position):
         s0.set_speed(.5)
         s0.go_to_position(self.ids.moveArm.value / 5000)
 
     def homeArm(self):
-        arm.home(self.homeDirection)
+        # arm.home(self.homeDirection)
+        print('ok')
         
     def isBallOnTallTower(self):
-        if (cyprus.read_gpio() & 0b0001) == 1:
-            sleep(0.01)
-        else:
-            sleep(0.01)
-            print("Ball on top of tall tower")
+        global tall
+        while True:
+            if (cyprus.read_gpio() & 0b0001) == 1:
+                sleep(0.01)
+                if (cyprus.read_gpio() & 0b0001) == 1:
+                    tall = False
+            else:
+                sleep(0.01)
+                tall = True
+                print("Ball on top of tall tower")
 
     def isBallOnShortTower(self):
-        if (cyprus.read_gpio() & 0b0010) == 1:
-            sleep(0.01)
-        else:
-            sleep(0.01)
-            print("Ball on top of short tower")
+        global short
+        while True:
+            if (cyprus.read_gpio() & 0b0010) == 1:
+                sleep(0.01)
+                if (cyprus.read_gpio() & 0b0010) == 1:
+                    short = False
+                    print("Ball on top of short tower")
+            else:
+                sleep(0.01)
+                short = True
+
         
     def initialize(self):
+        self.homeArm()
+        cyprus.set_servo_position(2, 0.5)
         print("Home arm and turn off magnet")
 
     def resetColors(self):
@@ -151,6 +191,9 @@ class MainScreen(Screen):
         self.ids.auto.color = BLUE
 
     def quit(self):
+        s0.free_all()
+        GPIO.cleanup()
+        cyprus.close()
         MyApp().stop()
     
 sm.add_widget(MainScreen(name = 'main'))
