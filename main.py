@@ -85,10 +85,12 @@ arm = stepper(port = 0, speed = 10)
 s0 = stepper(port=0, micro_steps=32, hold_current=20, run_current=20, accel_current=20, deaccel_current=20,
              steps_per_unit=200, speed=8)
 global arm
-arm = False
+arm = True
 global magnet
 magnet = False
 global tall
+global game
+game = 0
 tall = False
 global short
 short = False
@@ -121,6 +123,7 @@ class MainScreen(Screen):
             cyprus.set_pwm_values(1, period_value=100000, compare_value=0,
                                   compare_mode=cyprus.LESS_THAN_OR_EQUAL)
             print("Up")
+
             arm = True
         else:
             cyprus.set_pwm_values(1, period_value=100000, compare_value=100000,
@@ -142,30 +145,74 @@ class MainScreen(Screen):
     def auto(self):
         global tall
         global short
+        global game
+        global magnet
+        if(game == 0):
+            self.isBallOnTallTower()
+            game = 1
         if tall == True:
             print('running auto 1')
-        elif short == True:
+            s0.go_to_position(1.55)
+            self.toggleArm()
+            sleep(1)
+            self.toggleMagnet()
+            sleep(1)
+            self.toggleArm()
+            sleep(1)
+            self.isBallOnTallTower()
+            self.auto()
+        else:
+            s0.go_to_position(1.2)
+            self.toggleArm()
+            sleep(1)
+            self.toggleMagnet()
+            sleep(1)
+            self.toggleArm()
+            sleep(1)
             print("running auto 2")
+            if(magnet == True):
+                tall = True
+                print("yeet")
+                self.auto()
+            else:
+                tall = False
+                self.auto()
 
     def setArmPosition(self, position):
         s0.set_speed(.5)
         s0.go_to_position(self.ids.moveArm.value / 5000)
+        self.ids.armControlLabel.text = "Arm Position: %s" % (self.ids.moveArm.value / 5000)
 
     def homeArm(self):
-        # arm.home(self.homeDirection)
+        global f
+        s0.set_speed(1)
+        s0.start_relative_move(4)
+        while not s0.read_switch():
+            print("es")
+            continue
+        if(s0.get_position_in_units()>1):
+            print("yes")
+            s0.relative_move(-.5)
+            s0.start_relative_move(-4)
+            while not s0.read_switch():
+                print("stop")
+                continue
+            s0.hardStop()
+            s0.set_as_home()
+        s0.hardStop()
+        s0.set_as_home()
         print('ok')
         
     def isBallOnTallTower(self):
         global tall
-        while True:
+        if (cyprus.read_gpio() & 0b0001) == 1:
+            sleep(0.01)
             if (cyprus.read_gpio() & 0b0001) == 1:
-                sleep(0.01)
-                if (cyprus.read_gpio() & 0b0001) == 1:
-                    tall = False
-            else:
-                sleep(0.01)
-                tall = True
-                print("Ball on top of tall tower")
+                tall = False
+        else:
+            sleep(0.01)
+            tall = True
+            print("Ball on top of tall tower")
 
     def isBallOnShortTower(self):
         global short
