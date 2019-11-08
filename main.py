@@ -145,6 +145,7 @@ class MainScreen(Screen):
     def auto(self):
         global tall
         global short
+        global f
         global game
         global magnet
         if(game == 0):
@@ -152,7 +153,11 @@ class MainScreen(Screen):
             game = 1
         if tall == True:
             print('running auto 1')
-            s0.go_to_position(1.55)
+            if(f == False):
+                s0.go_to_position(1.53)
+            else:
+                s0.go_to_position(-0.47)
+            sleep(1)
             self.toggleArm()
             sleep(1)
             self.toggleMagnet()
@@ -162,7 +167,11 @@ class MainScreen(Screen):
             self.isBallOnTallTower()
             self.auto()
         else:
-            s0.go_to_position(1.2)
+            if(f == False):
+                s0.go_to_position(1.2)
+            else:
+                s0.go_to_position(-.8)
+            sleep(1)
             self.toggleArm()
             sleep(1)
             self.toggleMagnet()
@@ -199,8 +208,11 @@ class MainScreen(Screen):
                 continue
             s0.hardStop()
             s0.set_as_home()
-        s0.hardStop()
-        s0.set_as_home()
+            f = False
+        else:
+            s0.hardStop()
+            s0.set_as_home()
+            f = True
         print('ok')
         
     def isBallOnTallTower(self):
